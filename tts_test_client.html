@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TTS WebSocket Client</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #4a5568;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .connection-panel {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            gap: 15px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f7fafc;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+        }
+        
+        input[type="url"] {
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        input[type="url"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .connect-btn {
+            background: linear-gradient(135deg, #48bb78, #38a169);
+            color: white;
+        }
+        
+        .connect-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(72, 187, 120, 0.4);
+        }
+        
+        .disconnect-btn {
+            background: linear-gradient(135deg, #f56565, #e53e3e);
+            color: white;
+        }
+        
+        .disconnect-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(245, 101, 101, 0.4);
+        }
+        
+        .status {
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-weight: 600;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .status.connected {
+            background: #c6f6d5;
+            color: #276749;
+            border: 2px solid #9ae6b4;
+        }
+        
+        .status.disconnected {
+            background: #fed7d7;
+            color: #742a2a;
+            border: 2px solid #fc8181;
+        }
+        
+        .status.connecting {
+            background: #fefcbf;
+            color: #744210;
+            border: 2px solid #f6e05e;
+        }
+        
+        .input-panel {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            gap: 15px;
+            margin: 30px 0;
+            padding: 25px;
+            background: linear-gradient(135deg, #f7fafc, #edf2f7);
+            border-radius: 15px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        textarea {
+            padding: 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 16px;
+            resize: vertical;
+            min-height: 120px;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .send-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        .send-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .flush-btn {
+            background: linear-gradient(135deg, #ed8936, #dd6b20);
+            color: white;
+        }
+        
+        .flush-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(237, 137, 54, 0.4);
+        }
+        
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+        
+        .audio-panel {
+            margin: 30px 0;
+            padding: 25px;
+            background: #1a202c;
+            border-radius: 15px;
+            color: white;
+        }
+        
+        .audio-panel h3 {
+            margin-top: 0;
+            color: #63b3ed;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .audio-queue {
+            display: grid;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .audio-item {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 15px;
+            align-items: center;
+            padding: 15px;
+            background: #2d3748;
+            border-radius: 10px;
+            border-left: 4px solid #63b3ed;
+        }
+        
+        .audio-controls audio {
+            width: 100%;
+            height: 40px;
+        }
+        
+        .play-btn {
+            background: linear-gradient(135deg, #63b3ed, #4299e1);
+            color: white;
+            min-width: 80px;
+            height: 40px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .captions-panel {
+            margin: 30px 0;
+            padding: 25px;
+            background: linear-gradient(135deg, #e6fffa, #b2f5ea);
+            border-radius: 15px;
+            border-left: 4px solid #38b2ac;
+        }
+        
+        .captions-panel h3 {
+            margin-top: 0;
+            color: #234e52;
+        }
+        
+        .current-caption {
+            font-size: 18px;
+            line-height: 1.6;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            min-height: 60px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .char-highlight {
+            background: linear-gradient(135deg, #ffd89b, #19547b);
+            color: white;
+            padding: 2px 4px;
+            border-radius: 3px;
+            animation: highlight 0.3s ease;
+        }
+        
+        @keyframes highlight {
+            from { background: #667eea; }
+            to { background: linear-gradient(135deg, #ffd89b, #19547b); }
+        }
+        
+        .examples {
+            margin: 30px 0;
+            padding: 25px;
+            background: #fffbf0;
+            border-radius: 15px;
+            border-left: 4px solid #f6ad55;
+        }
+        
+        .examples h3 {
+            margin-top: 0;
+            color: #744210;
+        }
+        
+        .example-item {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .example-item:hover {
+            border-color: #f6ad55;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(246, 173, 85, 0.2);
+        }
+        
+        .logs {
+            margin: 30px 0;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #e2e8f0;
+            border-radius: 12px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px 10px;
+            border-radius: 4px;
+        }
+        
+        .log-info { background: rgba(66, 153, 225, 0.1); }
+        .log-error { background: rgba(245, 101, 101, 0.1); }
+        .log-success { background: rgba(72, 187, 120, 0.1); }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>TTS WebSocket Client</h1>
+        
+        <!-- Connection Panel -->
+        <div class="connection-panel">
+            <input type="url" id="wsUrl" value="ws://localhost:8765" placeholder="WebSocket URL">
+            <button id="connectBtn" class="connect-btn">Connect</button>
+            <button id="disconnectBtn" class="disconnect-btn" disabled>Disconnect</button>
+        </div>
+        
+        <div id="status" class="status disconnected">Disconnected</div>
+        
+        <!-- Input Panel -->
+        <div class="input-panel">
+            <textarea id="textInput" placeholder="Enter text to synthesize... (supports LaTeX math like \(a^2 + b^2 = c^2\))"></textarea>
+            <button id="sendBtn" class="send-btn" disabled>Send</button>
+            <button id="flushBtn" class="flush-btn" disabled>Flush</button>
+        </div>
+        
+        <!-- Example Texts -->
+        <div class="examples">
+            <h3>Example Texts (click to use)</h3>
+            <div class="example-item" data-text="Hello, this is a test of the WebSocket TTS system!">
+                Basic greeting and system test
+            </div>
+            <div class="example-item" data-text="The product of three and seven is \(3 \times 7 = 21\).">
+                Simple math equation
+            </div>
+            <div class="example-item" data-text="For a right triangle, the Pythagorean theorem states \(a^2 + b^2 = c^2\).">
+                Pythagorean theorem
+            </div>
+            <div class="example-item" data-text="The derivative of \(e^x\) with respect to \(x\) is \(\frac{d}{dx} e^x = e^x\).">
+                Calculus derivative
+            </div>
+            <div class="example-item" data-text="The quadratic formula is \(x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}\).">
+                Quadratic formula
+            </div>
+        </div>
+        
+        <!-- Audio Panel -->
+        <div class="audio-panel">
+            <h3>Audio Playback</h3>
+            <div id="audioQueue" class="audio-queue">
+                <p style="text-align: center; color: #a0aec0;">Audio chunks will appear here as they're received...</p>
+            </div>
+        </div>
+        
+        <!-- Real-time Captions -->
+        <div class="captions-panel">
+            <h3>Real-time Captions</h3>
+            <div id="currentCaption" class="current-caption">
+                Captions with character timing will appear here during playback...
+            </div>
+        </div>
+        
+        <!-- Logs -->
+        <div class="logs" id="logs">
+            <div class="log-entry log-info">Ready to connect to TTS WebSocket service...</div>
+        </div>
+    </div>
+
+    <script>
+        class TTSWebSocketClient {
+            constructor() {
+                this.ws = null;
+                this.isConnected = false;
+                this.audioChunks = [];
+                this.currentlyPlaying = null;
+                this.audioContext = null;
+                this.initializeElements();
+                this.bindEvents();
+                this.initializeAudio();
+            }
+
+            async initializeAudio() {
+                try {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    this.log('Audio context initialized', 'success');
+                } catch (error) {
+                    this.log(`Failed to initialize audio context: ${error.message}`, 'error');
+                }
+            }
+
+            initializeElements() {
+                this.wsUrlInput = document.getElementById('wsUrl');
+                this.connectBtn = document.getElementById('connectBtn');
+                this.disconnectBtn = document.getElementById('disconnectBtn');
+                this.status = document.getElementById('status');
+                this.textInput = document.getElementById('textInput');
+                this.sendBtn = document.getElementById('sendBtn');
+                this.flushBtn = document.getElementById('flushBtn');
+                this.audioQueue = document.getElementById('audioQueue');
+                this.currentCaption = document.getElementById('currentCaption');
+                this.logs = document.getElementById('logs');
+            }
+
+            bindEvents() {
+                this.connectBtn.addEventListener('click', () => this.connect());
+                this.disconnectBtn.addEventListener('click', () => this.disconnect());
+                this.sendBtn.addEventListener('click', () => this.sendText());
+                this.flushBtn.addEventListener('click', () => this.flush());
+                
+                // Enter key to send
+                this.textInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        this.sendText();
+                    }
+                });
+
+                // Example text clicks
+                document.querySelectorAll('.example-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        this.textInput.value = item.dataset.text;
+                        if (this.isConnected) {
+                            this.sendText();
+                        }
+                    });
+                });
+            }
+
+            log(message, type = 'info') {
+                const entry = document.createElement('div');
+                entry.className = `log-entry log-${type}`;
+                entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+                this.logs.appendChild(entry);
+                this.logs.scrollTop = this.logs.scrollHeight;
+            }
+
+            updateStatus(text, className) {
+                this.status.textContent = text;
+                this.status.className = `status ${className}`;
+            }
+
+            async connect() {
+                const url = this.wsUrlInput.value.trim();
+                if (!url) {
+                    this.log('Please enter a WebSocket URL', 'error');
+                    return;
+                }
+
+                this.updateStatus('Connecting...', 'connecting');
+                this.connectBtn.disabled = true;
+
+                try {
+                    this.ws = new WebSocket(url);
+                    
+                    this.ws.onopen = () => {
+                        this.isConnected = true;
+                        this.updateStatus('Connected', 'connected');
+                        this.connectBtn.disabled = true;
+                        this.disconnectBtn.disabled = false;
+                        this.sendBtn.disabled = false;
+                        this.flushBtn.disabled = false;
+                        this.log('Connected to TTS WebSocket service', 'success');
+                        
+                        // Send initial space as per protocol
+                        this.ws.send(JSON.stringify({ text: ' ', flush: false }));
+                        this.log('Sent initial space character', 'info');
+                    };
+
+                    this.ws.onmessage = (event) => {
+                        try {
+                            const data = JSON.parse(event.data);
+                            this.handleAudioChunk(data);
+                        } catch (e) {
+                            this.log(`Error parsing message: ${e.message}`, 'error');
+                        }
+                    };
+
+                    this.ws.onclose = () => {
+                        this.isConnected = false;
+                        this.updateStatus('Disconnected', 'disconnected');
+                        this.connectBtn.disabled = false;
+                        this.disconnectBtn.disabled = true;
+                        this.sendBtn.disabled = true;
+                        this.flushBtn.disabled = true;
+                        this.log('Disconnected from WebSocket', 'info');
+                    };
+
+                    this.ws.onerror = (error) => {
+                        this.log(`WebSocket error: ${error.message || 'Connection failed'}`, 'error');
+                        this.connectBtn.disabled = false;
+                    };
+
+                } catch (error) {
+                    this.log(`Connection error: ${error.message}`, 'error');
+                    this.connectBtn.disabled = false;
+                    this.updateStatus('Connection failed', 'disconnected');
+                }
+            }
+
+            disconnect() {
+                if (this.ws && this.isConnected) {
+                    // Send empty string to close as per protocol
+                    this.ws.send(JSON.stringify({ text: '', flush: false }));
+                    this.ws.close();
+                }
+            }
+
+            sendText() {
+                const text = this.textInput.value.trim();
+                if (!text || !this.isConnected) return;
+
+                const message = { text: text, flush: false };
+                this.ws.send(JSON.stringify(message));
+                this.log(`Sent text: "${text.substring(0, 50)}${text.length > 50 ? '...' : ''}"`, 'info');
+                this.textInput.value = '';
+            }
+
+            flush() {
+                if (!this.isConnected) return;
+
+                const message = { text: '', flush: true };
+                this.ws.send(JSON.stringify(message));
+                this.log('Sent flush command', 'info');
+            }
+
+            // Create WAV header for PCM data
+            createWavHeader(pcmData, sampleRate = 44100) {
+                const buffer = new ArrayBuffer(44);
+                const view = new DataView(buffer);
+                
+                // WAV header
+                const writeString = (offset, string) => {
+                    for (let i = 0; i < string.length; i++) {
+                        view.setUint8(offset + i, string.charCodeAt(i));
+                    }
+                };
+                
+                writeString(0, 'RIFF');
+                view.setUint32(4, 36 + pcmData.length, true);
+                writeString(8, 'WAVE');
+                writeString(12, 'fmt ');
+                view.setUint32(16, 16, true);
+                view.setUint16(20, 1, true); // PCM format
+                view.setUint16(22, 1, true); // mono
+                view.setUint32(24, sampleRate, true);
+                view.setUint32(28, sampleRate * 2, true); // byte rate
+                view.setUint16(32, 2, true); // block align
+                view.setUint16(34, 16, true); // bits per sample
+                writeString(36, 'data');
+                view.setUint32(40, pcmData.length, true);
+                
+                return new Uint8Array(buffer);
+            }
+
+            async handleAudioChunk(data) {
+                const { audio, alignment } = data;
+                this.log(`Received audio chunk: ${audio.length} bytes, ${alignment.chars.length} characters`, 'success');
+                this.log(`Chars: ${alignment.chars}`, 'success');
+                this.log(`Char start times (ms): ${alignment.char_start_times_ms}`, 'success');
+                this.log(`Char duration (ms): ${alignment.char_durations_ms}`, 'success');
+
+                try {
+                    // Decode base64 PCM data
+                    const pcmData = Uint8Array.from(atob(audio), c => c.charCodeAt(0));
+                    
+                    // Create WAV file with proper header
+                    const wavHeader = this.createWavHeader(pcmData, 44100);
+                    const wavData = new Uint8Array(wavHeader.length + pcmData.length);
+                    wavData.set(wavHeader, 0);
+                    wavData.set(pcmData, wavHeader.length);
+                    
+                    // Create audio blob and element
+                    const audioBlob = new Blob([wavData], { type: 'audio/wav' });
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    const audioElement = document.createElement('audio');
+                    audioElement.src = audioUrl;
+                    audioElement.controls = true;
+                    audioElement.preload = 'auto';
+
+                    // Create UI element
+                    const audioItem = document.createElement('div');
+                    audioItem.className = 'audio-item';
+                    
+                    const playBtn = document.createElement('button');
+                    playBtn.className = 'play-btn';
+                    playBtn.textContent = 'Play';
+                    playBtn.onclick = () => this.playWithCaptions(audioElement, alignment);
+
+                    const text = alignment.chars.join('');
+                    const textPreview = document.createElement('span');
+                    textPreview.textContent = `"${text.substring(0, 50)}${text.length > 50 ? '...' : ''}"`;
+
+                    audioItem.appendChild(playBtn);
+                    audioItem.appendChild(textPreview);
+                    audioItem.appendChild(audioElement);
+
+                    // Remove placeholder text if present
+                    if (this.audioQueue.children.length === 1 && 
+                        this.audioQueue.children[0].tagName === 'P') {
+                        this.audioQueue.removeChild(this.audioQueue.children[0]);
+                    }
+
+                    this.audioQueue.appendChild(audioItem);
+                    this.audioChunks.push({ audio: audioElement, alignment });
+
+                    // Auto-play if nothing is currently playing
+                    if (!this.currentlyPlaying) {
+                        setTimeout(() => this.playWithCaptions(audioElement, alignment), 100);
+                    }
+
+                } catch (error) {
+                    this.log(`Error processing audio chunk: ${error.message}`, 'error');
+                }
+            }
+
+            async playWithCaptions(audioElement, alignment) {
+                if (this.currentlyPlaying) {
+                    this.currentlyPlaying.pause();
+                }
+
+                // Resume audio context if needed
+                if (this.audioContext && this.audioContext.state === 'suspended') {
+                    try {
+                        await this.audioContext.resume();
+                    } catch (e) {
+                        this.log(`Error resuming audio context: ${e.message}`, 'error');
+                    }
+                }
+
+                this.currentlyPlaying = audioElement;
+                const { chars, char_start_times_ms, char_durations_ms } = alignment;
+
+                // Reset caption
+                this.currentCaption.innerHTML = chars.join('');
+
+                try {
+                    // Play audio
+                    const playPromise = audioElement.play();
+                    
+                    if (playPromise !== undefined) {
+                        playPromise.then(() => {
+                            this.log('Audio playback started', 'success');
+                        }).catch(error => {
+                            this.log(`Audio play error: ${error.message}`, 'error');
+                            this.currentlyPlaying = null;
+                        });
+                    }
+
+                    // Animate captions
+                    const startTime = Date.now();
+
+                    const animateCaption = () => {
+                        if (audioElement.paused || audioElement.ended) {
+                            this.currentlyPlaying = null;
+                            return;
+                        }
+
+                        const elapsed = Date.now() - startTime;
+                        
+                        // Highlight characters that should be spoken by now
+                        let html = '';
+                        for (let i = 0; i < chars.length; i++) {
+                            const charStartTime = char_start_times_ms[i];
+                            const char = chars[i];
+                            
+                            if (elapsed >= charStartTime && elapsed < charStartTime + char_durations_ms[i]) {
+                                html += `<span class="char-highlight">${char}</span>`;
+                            } else if (elapsed >= charStartTime) {
+                                html += char;
+                            } else {
+                                html += `<span style="opacity: 0.5">${char}</span>`;
+                            }
+                        }
+                        
+                        this.currentCaption.innerHTML = html;
+                        requestAnimationFrame(animateCaption);
+                    };
+
+                    // Start caption animation
+                    animateCaption();
+
+                    audioElement.onended = () => {
+                        this.currentlyPlaying = null;
+                        this.currentCaption.innerHTML = chars.join('');
+                        this.log('Audio playback completed', 'info');
+                    };
+
+                } catch (error) {
+                    this.log(`Playback error: ${error.message}`, 'error');
+                    this.currentlyPlaying = null;
+                }
+            }
+        }
+
+        // Initialize the client
+        const client = new TTSWebSocketClient();
+    </script>
+</body>
+</html>
