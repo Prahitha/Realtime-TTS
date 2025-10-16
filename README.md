@@ -10,6 +10,8 @@ A real-time Text-to-Speech (TTS) WebSocket service that provides streaming audio
 - **Smart text chunking**: Automatically splits text at sentence boundaries for optimal synthesis
 - **WebSocket protocol**: Compatible with streaming interfaces
 
+https://github.com/user-attachments/assets/ca8aafa9-3fcb-4d20-82ce-3b47119695e6
+
 ## Architecture
 
 ### Core Components
